@@ -11,7 +11,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Documento {
+public class DocumentoModel {
 
     @Id
     @Column(name = "id_documento", unique = true, nullable = false)

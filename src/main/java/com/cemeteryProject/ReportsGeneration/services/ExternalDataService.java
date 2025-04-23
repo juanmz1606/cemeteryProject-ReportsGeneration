@@ -33,7 +33,7 @@ public class ExternalDataService {
     }
 
     public List<NichoCuerpoDTO> getAllNichoCuerpo() {
-        String url = backendBaseUrl + "/nichoscuerpo";
+        String url = backendBaseUrl + "/nichoscuerpos";
         NichoCuerpoDTO[] relaciones = restTemplate.getForObject(url, NichoCuerpoDTO[].class);
         return Arrays.asList(relaciones);
     }

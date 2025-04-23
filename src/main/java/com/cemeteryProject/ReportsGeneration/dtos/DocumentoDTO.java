@@ -1,6 +1,6 @@
 package com.cemeteryProject.ReportsGeneration.dtos;
 
-import com.cemeteryProject.ReportsGeneration.models.Documento.TipoDocumento;
+import com.cemeteryProject.ReportsGeneration.models.DocumentoModel.TipoDocumento;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
