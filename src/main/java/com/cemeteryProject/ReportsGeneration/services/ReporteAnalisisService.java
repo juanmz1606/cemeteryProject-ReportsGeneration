@@ -21,7 +21,6 @@ public class ReporteAnalisisService {
     public ReporteAnalisisDTO generarAnalisis(String usuario) {
         List<CuerpoInhumadoDTO> cuerpos = externalDataService.getAllCuerpos();
         List<NichoDTO> nichos = externalDataService.getAllNichos();
-
         ReporteAnalisisDTO dto = new ReporteAnalisisDTO();
         dto.setFechaGeneracion(LocalDate.now());
         dto.setUsuario(usuario);
@@ -46,15 +45,25 @@ public class ReporteAnalisisService {
 
         Map<String, Double> promedioPorEstado = cuerpos.stream()
         .collect(Collectors.groupingBy(
-            c -> c.getEstado().toString(),
-            Collectors.averagingInt(c -> {
-                LocalDate fecha = c.getFechaIngreso().toLocalDate();
-                return fecha.getYear() * 12 + fecha.getMonthValue();
-            })
+            c -> c.getEstado().toString(), // Group by state (INHUMADO, EXHUMADO)
+            Collectors.averagingDouble(c -> 1.0) // Count each body as 1.0 for averaging
         ));
-        
-        
 
+        Map<String, Long> estadoNichos = nichos.stream()
+            .collect(Collectors.groupingBy(
+                n -> n.getEstado().toString(),
+                Collectors.counting()
+            ));
+
+        Map<Object, Long> cuerposPorTipo = cuerpos.stream()
+            .collect(Collectors.groupingBy(
+                c -> c.getEstado().toString(),  // o getTipoCuerpo() si lo tienes así
+                Collectors.counting()
+            ));
+
+        dto.setCuerposPorTipo(cuerposPorTipo);
+
+        dto.setEstadoNichos(estadoNichos);
         dto.setPromedioMensualGeneral(promedioGeneral);
         dto.setPromedioMensualPorTipo(promedioPorEstado);
 

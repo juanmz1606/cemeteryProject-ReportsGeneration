@@ -14,4 +14,8 @@ public class ReporteAnalisisDTO {
 
     private Map<String, Double> promedioMensualPorTipo; // tipo -> promedio
     private double promedioMensualGeneral;
+    private Map<String, Long> estadoNichos;
+    private Map<Object, Long> cuerposPorTipo;
+
+
 }

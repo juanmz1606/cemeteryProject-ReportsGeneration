@@ -34,7 +34,7 @@ public class DocumentoController {
         byte[] pdfBytes = pdfGeneratorService.generarReportePDFConAnalisis(analisis);
 
         DocumentoDTO docDTO = new DocumentoDTO();
-        docDTO.setNombre("Reporte_Analitico_" + LocalDateTime.now());
+        docDTO.setNombre("Reporte_" + LocalDateTime.now());
         docDTO.setFechaGeneracion(LocalDateTime.now());
         docDTO.setTipo(TipoDocumento.REPORTE);
         docDTO.setUsuarioId(usuarioId);
@@ -44,7 +44,7 @@ public class DocumentoController {
         // Devolver PDF al cliente
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("reporte", "reporte-analitico-cementerio.pdf");
+        headers.setContentDispositionFormData("reporte", "reporte-cementerio.pdf");
 
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
