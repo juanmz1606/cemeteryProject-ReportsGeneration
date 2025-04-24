@@ -1,10 +1,6 @@
 package com.cemeteryProject.ReportsGeneration.services;
 
-import com.cemeteryProject.ReportsGeneration.dtos.CuerpoInhumadoDTO;
 import com.cemeteryProject.ReportsGeneration.dtos.DocumentoDTO;
-import com.cemeteryProject.ReportsGeneration.dtos.NichoCuerpoDTO;
-import com.cemeteryProject.ReportsGeneration.dtos.NichoDTO;
-import com.cemeteryProject.ReportsGeneration.dtos.ReporteDTO;
 import com.cemeteryProject.ReportsGeneration.models.DocumentoModel;
 import com.cemeteryProject.ReportsGeneration.repositories.IDocumentoRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,15 +14,6 @@ import org.springframework.stereotype.Service;
 public class DocumentoService {
 
     private final IDocumentoRepository documentoRepository;
-    private final ExternalDataService externalDataService; // <<--- Agregado 
-
-    public ReporteDTO generarDatosReporte() {
-        List<NichoDTO> nichos = externalDataService.getAllNichos();
-        List<CuerpoInhumadoDTO> cuerpos = externalDataService.getAllCuerpos();
-        List<NichoCuerpoDTO> relaciones = externalDataService.getAllNichoCuerpo();
-
-        return new ReporteDTO(nichos.size(), cuerpos.size(), relaciones.size());
-    }
 
     public DocumentoDTO toDTO(DocumentoModel model) {
         DocumentoDTO dto = new DocumentoDTO();

@@ -1,13 +1,11 @@
 package com.cemeteryProject.ReportsGeneration.controllers;
 
-import com.cemeteryProject.ReportsGeneration.dtos.CuerpoInhumadoDTO;
 import com.cemeteryProject.ReportsGeneration.dtos.DocumentoDTO;
-import com.cemeteryProject.ReportsGeneration.dtos.NichoCuerpoDTO;
-import com.cemeteryProject.ReportsGeneration.dtos.NichoDTO;
+import com.cemeteryProject.ReportsGeneration.dtos.ReporteAnalisisDTO;
 import com.cemeteryProject.ReportsGeneration.models.DocumentoModel.TipoDocumento;
 import com.cemeteryProject.ReportsGeneration.services.DocumentoService;
-import com.cemeteryProject.ReportsGeneration.services.ExternalDataService;
 import com.cemeteryProject.ReportsGeneration.services.PdfGeneratorService;
+import com.cemeteryProject.ReportsGeneration.services.ReporteAnalisisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
@@ -19,46 +17,37 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/documentos")
+@RequestMapping("/reportes")
 @RequiredArgsConstructor
 public class DocumentoController {
 
-    private final ExternalDataService externalDataService;
     private final DocumentoService documentoService;
     private final PdfGeneratorService pdfGeneratorService;
+    private final ReporteAnalisisService reporteAnalisisService;
 
     @GetMapping("/descargar")
     public ResponseEntity<byte[]> generarPdf(@RequestParam(defaultValue = "user-demo") String usuarioId) {
-        // Obtener datos para el reporte
-        List<NichoDTO> nichos = externalDataService.getAllNichos();
-        List<CuerpoInhumadoDTO> cuerpos = externalDataService.getAllCuerpos();
-        List<NichoCuerpoDTO> relaciones = externalDataService.getAllNichoCuerpo();
+        // Construir datos analíticos
+        ReporteAnalisisDTO analisis = reporteAnalisisService.generarAnalisis(usuarioId);
 
-        // Generar PDF
-        byte[] pdfBytes = pdfGeneratorService.generarReportePDF(
-                nichos.size(),
-                cuerpos.size(),
-                relaciones.size(),
-                usuarioId
-        );
+        // Generar PDF con análisis
+        byte[] pdfBytes = pdfGeneratorService.generarReportePDFConAnalisis(analisis);
 
-        // Guardar el documento generado
-        DocumentoDTO doc = new DocumentoDTO();
-        doc.setNombre("Reporte_" + LocalDateTime.now());
-        doc.setFechaGeneracion(LocalDateTime.now());
-        doc.setTipo(TipoDocumento.REPORTE);
-        doc.setUsuarioId(usuarioId);
-        documentoService.crearDocumento(doc); // <-- ahora usando el DTO
+        DocumentoDTO docDTO = new DocumentoDTO();
+        docDTO.setNombre("Reporte_Analitico_" + LocalDateTime.now());
+        docDTO.setFechaGeneracion(LocalDateTime.now());
+        docDTO.setTipo(TipoDocumento.REPORTE);
+        docDTO.setUsuarioId(usuarioId);
+        documentoService.crearDocumento(docDTO);
 
-        // Configurar los headers para la respuesta HTTP
+
+        // Devolver PDF al cliente
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("reporte", "reporte-cementerio.pdf");
+        headers.setContentDispositionFormData("reporte", "reporte-analitico-cementerio.pdf");
 
-        // Devolver el PDF al cliente
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
-
 
     @GetMapping
     public List<DocumentoDTO> listarTodos() {
