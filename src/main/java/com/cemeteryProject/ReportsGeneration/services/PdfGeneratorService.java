@@ -1,7 +1,11 @@
 package com.cemeteryProject.ReportsGeneration.services;
 
+import com.cemeteryProject.ReportsGeneration.dtos.CuerpoInhumadoDTO;
 import com.cemeteryProject.ReportsGeneration.dtos.ReporteAnalisisDTO;
 import com.lowagie.text.*;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.ChartUtils;
@@ -15,7 +19,9 @@ import org.springframework.stereotype.Service;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -25,7 +31,7 @@ public class PdfGeneratorService {
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             Document document = new Document();
-            com.lowagie.text.pdf.PdfWriter.getInstance(document, out);
+            PdfWriter.getInstance(document, out);
             document.open();
 
             // Título
@@ -180,6 +186,109 @@ public class PdfGeneratorService {
         }
     }
 
+    public byte[] generarReportePDFCuerpos(List<CuerpoInhumadoDTO> cuerpoList) {
+        try {
+            if (cuerpoList == null || cuerpoList.isEmpty()) {
+                throw new IllegalArgumentException("No se proporcionaron datos de cuerpos para generar el reporte.");
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            Document document = new Document();
+            PdfWriter.getInstance(document, out);
+            document.open();
+
+            // Título
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
+            Paragraph title = new Paragraph("Lista de Cuerpos Registrados", titleFont);
+            title.setAlignment(Paragraph.ALIGN_CENTER);
+            title.setSpacingAfter(10);
+            document.add(title);
+
+            // Fecha de generación
+            Font dateFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+            Paragraph date = new Paragraph("Generado el: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")), dateFont);
+            date.setAlignment(Paragraph.ALIGN_CENTER);
+            date.setSpacingAfter(20);
+            document.add(date);
+
+            // Formateadores para fechas
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+            // Iterar sobre cada cuerpo y crear un bloque
+            Font sectionTitleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+            Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
+            Font valueFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+            int index = 1;
+
+            for (CuerpoInhumadoDTO cuerpo : cuerpoList) {
+                // Título del bloque: "Cuerpo #N - ID: [idCadaver]"
+                Paragraph sectionTitle = new Paragraph("Cuerpo #" + index + " - ID: " + (cuerpo.getIdCadaver() != null ? cuerpo.getIdCadaver() : "N/A"), sectionTitleFont);
+                sectionTitle.setSpacingBefore(20);
+                sectionTitle.setSpacingAfter(10);
+                document.add(sectionTitle);
+
+                // Crear una tabla de 2 columnas para organizar los atributos
+                PdfPTable table = new PdfPTable(2);
+                table.setWidthPercentage(100);
+                table.setWidths(new float[]{1, 1}); // Columnas de igual ancho
+
+                // Lista de atributos a mostrar
+                String[][] attributes = {
+                    {"Nombre", cuerpo.getNombre() != null ? cuerpo.getNombre() + " " + (cuerpo.getApellido() != null ? cuerpo.getApellido() : "") : "N/A"},
+                    {"Documento", cuerpo.getDocumentoIdentidad() != null ? cuerpo.getDocumentoIdentidad() : "N/A"},
+                    {"Protocolo Necropsia", cuerpo.getNumeroProtocoloNecropsia() != null ? cuerpo.getNumeroProtocoloNecropsia() : "N/A"},
+                    {"Causa de Muerte", cuerpo.getCausaMuerte() != null ? cuerpo.getCausaMuerte() : "N/A"},
+                    {"Fecha de Nacimiento", cuerpo.getFechaNacimiento() != null ? cuerpo.getFechaNacimiento().format(dateFormatter) : "N/A"},
+                    {"Fecha de Defunción", cuerpo.getFechaDefuncion() != null ? cuerpo.getFechaDefuncion().format(dateFormatter) : "N/A"},
+                    {"Fecha de Ingreso", cuerpo.getFechaIngreso() != null ? cuerpo.getFechaIngreso().format(dateTimeFormatter) : "N/A"},
+                    {"Fecha de Inhumación", cuerpo.getFechaInhumacion() != null ? cuerpo.getFechaInhumacion().format(dateFormatter) : "N/A"},
+                    {"Fecha de Exhumación", cuerpo.getFechaExhumacion() != null ? cuerpo.getFechaExhumacion().format(dateFormatter) : "N/A"},
+                    {"Funcionario Receptor", cuerpo.getFuncionarioReceptor() != null ? cuerpo.getFuncionarioReceptor() + (cuerpo.getCargoFuncionario() != null ? " (" + cuerpo.getCargoFuncionario() + ")" : "") : "N/A"},
+                    {"Autoridad Remitente", cuerpo.getAutoridadRemitente() != null ? cuerpo.getAutoridadRemitente() + (cuerpo.getCargoAutoridadRemitente() != null ? " (" + cuerpo.getCargoAutoridadRemitente() + ")" : "") : "N/A"},
+                    {"Autoridad de Exhumación", cuerpo.getAutoridadExhumacion() != null ? cuerpo.getAutoridadExhumacion() + (cuerpo.getCargoAutoridadExhumacion() != null ? " (" + cuerpo.getCargoAutoridadExhumacion() + ")" : "") : "N/A"},
+                    {"Estado", cuerpo.getEstado() != null ? cuerpo.getEstado().toString() : "N/A"},
+                    {"Observaciones", cuerpo.getObservaciones() != null ? cuerpo.getObservaciones() : "Sin observaciones"}
+                };
+
+                // Llenar la tabla con los atributos
+                for (String[] attribute : attributes) {
+                    // Etiqueta
+                    PdfPCell labelCell = new PdfPCell(new Phrase(attribute[0] + ":", labelFont));
+                    labelCell.setBorder(Rectangle.NO_BORDER);
+                    labelCell.setPadding(2);
+                    labelCell.setBackgroundColor(new java.awt.Color(240, 240, 240)); // Fondo gris claro
+                    table.addCell(labelCell);
+
+                    // Valor
+                    PdfPCell valueCell = new PdfPCell(new Phrase(attribute[1], valueFont));
+                    valueCell.setBorder(Rectangle.NO_BORDER);
+                    valueCell.setPadding(2);
+                    valueCell.setBackgroundColor(new java.awt.Color(240, 240, 240)); // Fondo gris claro
+                    table.addCell(valueCell);
+                }
+
+                // Agregar la tabla al documento
+                document.add(table);
+
+                // Línea separadora
+                Paragraph separator = new Paragraph();
+                separator.setSpacingAfter(10);
+                separator.add(new Chunk(new com.lowagie.text.pdf.draw.LineSeparator()));
+                document.add(separator);
+
+                index++;
+            }
+
+            document.close();
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error al generar el reporte de cuerpos: " + e.getMessage(), e);
+        }
+    }
+
     private void addChartToDocument(Document document, JFreeChart chart, String chartType) throws Exception {
         // Personalizar la apariencia general de los gráficos
         chart.setBackgroundPaint(new java.awt.Color(240, 240, 240));
@@ -291,22 +400,17 @@ public class PdfGeneratorService {
 
             LineAndShapeRenderer renderer = new LineAndShapeRenderer();
             renderer.setSeriesPaint(0, new java.awt.Color(33, 150, 243));
-            renderer.setSeriesStroke(0, new java.awt.BasicStroke(2.0f));
-            renderer.setSeriesShapesVisible(0, true);
-            renderer.setDefaultItemLabelGenerator(new org.jfree.chart.labels.StandardCategoryItemLabelGenerator());
-            renderer.setDefaultItemLabelsVisible(true);
-            renderer.setDefaultItemLabelFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 12));
             categoryPlot.setRenderer(renderer);
         }
 
-        chart.getTitle().setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 16));
-
-        BufferedImage image = chart.createBufferedImage(500, 350);
+        // Convertir el gráfico a imagen y añadirlo al PDF
+        int width = 400;
+        int height = 300;
+        BufferedImage chartImage = chart.createBufferedImage(width, height);
         ByteArrayOutputStream chartOut = new ByteArrayOutputStream();
-        ChartUtils.writeBufferedImageAsPNG(chartOut, image);
-        Image chartImage = Image.getInstance(chartOut.toByteArray());
-        chartImage.setAlignment(Image.ALIGN_CENTER);
-        document.add(chartImage);
-        document.add(new Paragraph(" "));
+        ChartUtils.writeBufferedImageAsPNG(chartOut, chartImage);
+        Image pdfImage = Image.getInstance(chartOut.toByteArray());
+        pdfImage.scaleToFit(width, height);
+        document.add(pdfImage);
     }
 }

@@ -1,9 +1,11 @@
 package com.cemeteryProject.ReportsGeneration.controllers;
 
+import com.cemeteryProject.ReportsGeneration.dtos.CuerpoInhumadoDTO;
 import com.cemeteryProject.ReportsGeneration.dtos.DocumentoDTO;
 import com.cemeteryProject.ReportsGeneration.dtos.ReporteAnalisisDTO;
 import com.cemeteryProject.ReportsGeneration.models.DocumentoModel.TipoDocumento;
 import com.cemeteryProject.ReportsGeneration.services.DocumentoService;
+import com.cemeteryProject.ReportsGeneration.services.ExternalDataService;
 import com.cemeteryProject.ReportsGeneration.services.PdfGeneratorService;
 import com.cemeteryProject.ReportsGeneration.services.ReporteAnalisisService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -24,6 +27,7 @@ public class DocumentoController {
     private final DocumentoService documentoService;
     private final PdfGeneratorService pdfGeneratorService;
     private final ReporteAnalisisService reporteAnalisisService;
+    private final ExternalDataService externalDataService;
 
     @GetMapping("/descargar")
     public ResponseEntity<byte[]> generarPdf(@RequestParam(defaultValue = "user-demo") String usuarioId) {
@@ -33,18 +37,44 @@ public class DocumentoController {
         // Generar PDF con análisis
         byte[] pdfBytes = pdfGeneratorService.generarReportePDFConAnalisis(analisis);
 
+        // Crear registro del documento con un nombre más bonito
         DocumentoDTO docDTO = new DocumentoDTO();
-        docDTO.setNombre("Reporte_" + LocalDateTime.now());
+        String formattedDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        docDTO.setNombre("Reporte del Cementerio | " + formattedDate);
         docDTO.setFechaGeneracion(LocalDateTime.now());
         docDTO.setTipo(TipoDocumento.REPORTE);
         docDTO.setUsuarioId(usuarioId);
         documentoService.crearDocumento(docDTO);
 
-
         // Devolver PDF al cliente
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("reporte", "reporte-cementerio.pdf");
+
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+    }
+
+    @GetMapping("/descargar-cuerpos")
+    public ResponseEntity<byte[]> descargarListaCuerpos(@RequestParam(defaultValue = "user-demo") String usuarioId) {
+        // Obtener la lista de cuerpos desde ExternalDataService
+        List<CuerpoInhumadoDTO> cuerpoList = externalDataService.getAllCuerpos();
+
+        // Generar PDF con la lista de cuerpos
+        byte[] pdfBytes = pdfGeneratorService.generarReportePDFCuerpos(cuerpoList);
+
+        // Crear registro del documento con un nombre más bonito
+        DocumentoDTO docDTO = new DocumentoDTO();
+        String formattedDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        docDTO.setNombre("Lista de Cuerpos | " + formattedDate);
+        docDTO.setFechaGeneracion(LocalDateTime.now());
+        docDTO.setTipo(TipoDocumento.REPORTE);
+        docDTO.setUsuarioId(usuarioId);
+        documentoService.crearDocumento(docDTO);
+
+        // Devolver PDF al cliente
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("reporte", "lista-cuerpos.pdf");
 
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
