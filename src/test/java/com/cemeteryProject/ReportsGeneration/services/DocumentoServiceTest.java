@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -34,8 +35,9 @@ class DocumentoServiceTest {
     @Test
     void toDTO_DeberiaConvertirModeloEnDTOCorrectamente() {
         // Arrange
+        String id = UUID.randomUUID().toString();
         DocumentoModel model = new DocumentoModel();
-        model.setId("123");
+        model.setId(id);
         model.setNombre("Reporte Prueba");
         model.setFechaGeneracion(LocalDateTime.now());
         model.setTipo(TipoDocumento.REPORTE);
@@ -46,7 +48,7 @@ class DocumentoServiceTest {
 
         // Assert
         assertNotNull(dto);
-        assertEquals("123", dto.getId());
+        assertEquals(id, dto.getId());
         assertEquals("Reporte Prueba", dto.getNombre());
         assertEquals(model.getFechaGeneracion(), dto.getFechaGeneracion());
         assertEquals(TipoDocumento.REPORTE, dto.getTipo());
@@ -78,14 +80,14 @@ class DocumentoServiceTest {
     void obtenerTodos_DeberiaRetornarListaDeDTOs() {
         // Arrange
         DocumentoModel model1 = new DocumentoModel();
-        model1.setId("1");
+        model1.setId(UUID.randomUUID().toString());
         model1.setNombre("Reporte 1");
         model1.setFechaGeneracion(LocalDateTime.now());
         model1.setTipo(TipoDocumento.REPORTE);
         model1.setUsuarioId("user1");
 
         DocumentoModel model2 = new DocumentoModel();
-        model2.setId("2");
+        model2.setId(UUID.randomUUID().toString());
         model2.setNombre("Reporte 2");
         model2.setFechaGeneracion(LocalDateTime.now());
         model2.setTipo(TipoDocumento.REPORTE);
@@ -102,13 +104,15 @@ class DocumentoServiceTest {
         assertEquals(2, dtos.size());
         assertEquals("Reporte 1", dtos.get(0).getNombre());
         assertEquals("Reporte 2", dtos.get(1).getNombre());
+        assertTrue(isValidUUID(dtos.get(0).getId()));
+        assertTrue(isValidUUID(dtos.get(1).getId()));
         verify(documentoRepository, times(1)).findAll();
     }
 
     @Test
     void obtenerPorId_DocumentoExistente_DeberiaRetornarDTO() {
         // Arrange
-        String id = "123";
+        String id = UUID.randomUUID().toString();
         DocumentoModel model = new DocumentoModel();
         model.setId(id);
         model.setNombre("Reporte Prueba");
@@ -124,6 +128,7 @@ class DocumentoServiceTest {
         // Assert
         assertNotNull(dto);
         assertEquals(id, dto.getId());
+        assertTrue(isValidUUID(dto.getId()));
         assertEquals("Reporte Prueba", dto.getNombre());
         assertEquals(TipoDocumento.REPORTE, dto.getTipo());
         verify(documentoRepository, times(1)).findById(id);
@@ -132,7 +137,7 @@ class DocumentoServiceTest {
     @Test
     void obtenerPorId_DocumentoNoExistente_DeberiaRetornarNull() {
         // Arrange
-        String id = "999";
+        String id = UUID.randomUUID().toString();
         when(documentoRepository.findById(id)).thenReturn(Optional.empty());
 
         // Act
@@ -152,14 +157,8 @@ class DocumentoServiceTest {
         dto.setTipo(TipoDocumento.REPORTE);
         dto.setUsuarioId("user456");
 
-        DocumentoModel model = new DocumentoModel();
-        model.setNombre(dto.getNombre());
-        model.setFechaGeneracion(dto.getFechaGeneracion());
-        model.setTipo(dto.getTipo());
-        model.setUsuarioId(dto.getUsuarioId());
-
         DocumentoModel savedModel = new DocumentoModel();
-        savedModel.setId("123");
+        savedModel.setId(UUID.randomUUID().toString());
         savedModel.setNombre(dto.getNombre());
         savedModel.setFechaGeneracion(dto.getFechaGeneracion());
         savedModel.setTipo(dto.getTipo());
@@ -172,7 +171,8 @@ class DocumentoServiceTest {
 
         // Assert
         assertNotNull(result);
-        assertEquals("123", result.getId());
+        assertNotNull(result.getId());
+        assertTrue(isValidUUID(result.getId()));
         assertEquals("Nuevo Documento", result.getNombre());
         assertEquals(TipoDocumento.REPORTE, result.getTipo());
         verify(documentoRepository, times(1)).save(any(DocumentoModel.class));
@@ -181,7 +181,7 @@ class DocumentoServiceTest {
     @Test
     void actualizarDocumento_DocumentoExistente_DeberiaActualizarYRetornarDTO() {
         // Arrange
-        String id = "123";
+        String id = UUID.randomUUID().toString();
         DocumentoDTO dto = new DocumentoDTO();
         dto.setNombre("Documento Actualizado");
         dto.setFechaGeneracion(LocalDateTime.of(2025, 5, 6, 10, 30));
@@ -204,6 +204,7 @@ class DocumentoServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(id, result.getId());
+        assertTrue(isValidUUID(result.getId()));
         assertEquals("Documento Actualizado", result.getNombre());
         assertEquals(TipoDocumento.REPORTE, result.getTipo());
         verify(documentoRepository, times(1)).existsById(id);
@@ -213,7 +214,7 @@ class DocumentoServiceTest {
     @Test
     void actualizarDocumento_DocumentoNoExistente_DeberiaRetornarNull() {
         // Arrange
-        String id = "999";
+        String id = UUID.randomUUID().toString();
         DocumentoDTO dto = new DocumentoDTO();
         dto.setNombre("Documento Actualizado");
         dto.setFechaGeneracion(LocalDateTime.of(2025, 5, 6, 10, 30));
@@ -234,7 +235,7 @@ class DocumentoServiceTest {
     @Test
     void eliminarPorId_DocumentoExistente_DeberiaRetornarTrueYEliminar() {
         // Arrange
-        String id = "123";
+        String id = UUID.randomUUID().toString();
         when(documentoRepository.existsById(id)).thenReturn(true);
 
         // Act
@@ -249,7 +250,7 @@ class DocumentoServiceTest {
     @Test
     void eliminarPorId_DocumentoNoExistente_DeberiaRetornarFalse() {
         // Arrange
-        String id = "999";
+        String id = UUID.randomUUID().toString();
         when(documentoRepository.existsById(id)).thenReturn(false);
 
         // Act
@@ -259,5 +260,15 @@ class DocumentoServiceTest {
         assertFalse(result);
         verify(documentoRepository, times(1)).existsById(id);
         verify(documentoRepository, never()).deleteById(id);
+    }
+
+    // Método auxiliar para validar UUID
+    private boolean isValidUUID(String uuid) {
+        try {
+            UUID.fromString(uuid);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }
