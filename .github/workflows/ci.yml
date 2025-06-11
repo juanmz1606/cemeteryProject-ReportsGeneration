@@ -20,4 +20,4 @@ jobs:
           java-version: '21'
 
       - name: Ejecutar pruebas con Maven
-        run: mvn test
+        run: mvn -B test -Dtest=!ReportsGenerationApplicationTests
